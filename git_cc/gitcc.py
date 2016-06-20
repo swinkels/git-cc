@@ -7,12 +7,15 @@ commands = [
     init, rebase, checkin, sync, reset, tag, update
 ]
 
+
 def main():
     args = sys.argv[1:]
     for cmd in commands:
-        if args and cmd.__name__ == args[0]:
+        _, _, module_name = cmd.__name__.rpartition('.')
+        if args and module_name == args[0]:
             return invoke(cmd, args)
     usage()
+
 
 def invoke(cmd, args):
     _args, _, _, defaults = inspect.getargspec(cmd.main)
@@ -26,7 +29,7 @@ def invoke(cmd, args):
             'help': cmd.ARGS[name],
             'dest': name,
         }
-        if default == False:
+        if not default:
             option['action'] = "store_true"
         name = name.replace('_', '-')
         parser.add_option('--' + name, **option)
@@ -37,12 +40,14 @@ def invoke(cmd, args):
         args.append(getattr(options, name))
     cmd.main(*args)
 
+
 def usage():
     print('usage: gitcc COMMAND [ARGS]\n')
     width = 11
     for cmd in commands:
         print('    %s %s' % (cmd.__name__.ljust(width), cmd.__doc__.split('\n')[0]))
     sys.exit(2)
+
 
 if __name__ == '__main__':
     main()
