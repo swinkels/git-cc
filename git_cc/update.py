@@ -6,10 +6,15 @@ from .common import *
 from . import reset
 from . import sync
 
+ARGS = {
+    'subdir': 'Syncs to the given Git sub directory',
+}
 
-def main(message):
+
+def main(message, subdir=None):
+    setGlobalsForSubdir(subdir)
     cc_exec(['update', '.'], errors=False)
-    if sync.main():
+    if sync.main(subdir=subdir):
         git_exec(['add', '.'])
         git_exec(['commit', '-m', message])
         reset.main('HEAD')

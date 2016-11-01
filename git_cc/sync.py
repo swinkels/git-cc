@@ -19,7 +19,8 @@ import common
 
 ARGS = {
     'cache':   'Use the cache for faster syncing',
-    'dry_run': 'Only print the paths of files to be synced'
+    'dry_run': 'Only print the paths of files to be synced',
+    'subdir':  'Syncs to the given Git sub directory',
 }
 
 
@@ -117,14 +118,16 @@ class ClearCaseSync(Sync):
         return output_as_set(command.split(' '))
 
 
-def main(cache=False, dry_run=False):
+def main(cache=False, dry_run=False, subdir=None):
+
     validateCC()
     if cache:
         return syncCache()
 
     src_root = common.CC_DIR
     src_dirs = cfg.getInclude()
-    dst_root = GIT_DIR
+    dst_root = os.path.join(GIT_DIR, common.SUBDIR)
+
     sync_file = SyncFile() if not dry_run else IgnoreFile()
 
     # determine whether we should sync all files or only the files that are
