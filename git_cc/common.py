@@ -229,3 +229,16 @@ DEBUG = cfg.getCore('debug', True)
 CC_TAG = CURRENT_BRANCH + '_cc'
 CI_TAG = CURRENT_BRANCH + '_ci'
 users = get_users_module(cfg.getUsersModulePath())
+
+SUBDIR = ""
+
+
+def setGlobalsForSubdir(subdir):
+    if subdir is not None:
+        global SUBDIR
+        SUBDIR = subdir
+        global CC_DIR
+        CC_DIR = path(join(cfg.get(CFG_CC), SUBDIR))
+        global CI_TAG
+        CI_TAG = SUBDIR + "-" + CURRENT_BRANCH + '_ci'
+        print "****", SUBDIR, CC_DIR, CURRENT_BRANCH, CC_TAG, CI_TAG

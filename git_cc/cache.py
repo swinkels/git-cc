@@ -1,5 +1,6 @@
 from os.path import join, exists
 from .common import *
+import common
 
 FILE = '.gitcc'
 
@@ -11,7 +12,7 @@ def getCache():
 class Cache(object):
     def __init__(self, dir):
         self.map = {}
-        self.file = FILE
+        self.file = join(common.SUBDIR, FILE)
         self.dir = dir
         self.empty = Version('/main/0')
     def start(self):

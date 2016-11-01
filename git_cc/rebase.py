@@ -2,7 +2,11 @@
 
 from os.path import join, dirname, exists, isdir
 import os, stat
+
 from .common import *
+
+import common
+
 from datetime import datetime, timedelta
 from fnmatch import fnmatch
 from .clearcase import cc
@@ -22,11 +26,19 @@ ARGS = {
     'dry_run': 'Prints a list of changesets to be imported',
     'lshistory': 'Prints the raw output of lshistory to be cached for load',
     'load': 'Loads the contents of a previously saved lshistory file',
+    'subdir': 'Rebases to the given Git sub directory',
 }
 
-cache = getCache()
+cache = None
 
-def main(stash=False, dry_run=False, lshistory=False, load=None):
+
+def main(stash=False, dry_run=False, lshistory=False, load=None, subdir=None):
+
+    setGlobalsForSubdir(subdir)
+
+    global cache
+    cache = getCache()
+
     validateCC()
     if not (stash or dry_run or lshistory):
         checkPristine()
@@ -65,15 +77,15 @@ def doCommit(cs):
         commit(cs)
     finally:
         if branch:
-            git_exec(['rebase', CI_TAG, CC_TAG])
+            git_exec(['rebase', common.CI_TAG, CC_TAG])
             git_exec(['rebase', CC_TAG, branch])
         else:
             git_exec(['branch', '-f', CC_TAG])
-        tag(CI_TAG, CC_TAG)
+        tag(common.CI_TAG, CC_TAG)
 
 def getSince():
     try:
-        date = git_exec(['log', '-n', '1', '--pretty=format:%ai', '%s' % CC_TAG])
+        date = git_exec(['log', '-n', '1', '--pretty=format:%ai', '%s' % common.CI_TAG])
         date = date[:19]
         date = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
         date = date + timedelta(seconds=1)
@@ -214,9 +226,10 @@ class Changeset(object):
             return
         if [e for e in cfg.getExclude() if fnmatch(file, e)]:
             return
-        toFile = path(join(GIT_DIR, file))
+        toFile = path(join(GIT_DIR, common.SUBDIR, file))
         mkdirs(toFile)
         removeFile(toFile)
+        print "****", file, toFile
         try:
             cc_exec(['get','-to', toFile, cc_file(file, version)])
         except:
@@ -227,7 +240,7 @@ class Changeset(object):
             git_exec(['checkout', 'HEAD', toFile])
         else:
             os.chmod(toFile, os.stat(toFile).st_mode | stat.S_IWRITE)
-        git_exec(['add', '-f', file], errors=False)
+        git_exec(['add', '-f', toFile], errors=False)
 
 class Uncataloged(Changeset):
     def add(self, files):
@@ -244,7 +257,7 @@ class Uncataloged(Changeset):
                 cache.remove(getFile(line))
             elif line.startswith('>'):
                 added = getFile(line)
-                cc_added = join(CC_DIR, added)
+                cc_added = join(common.CC_DIR, added)
                 if not exists(cc_added) or isdir(cc_added) or added in files:
                     continue
                 history = cc_exec(['lshistory', '-fmt', '%o%m|%Nd|%Vn\\n', added], errors=False)

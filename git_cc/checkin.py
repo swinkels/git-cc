@@ -1,6 +1,7 @@
 """Checkin new git changesets to Clearcase"""
 
 from .common import *
+import common
 from .clearcase import cc
 from .status import Modify, Add, Delete, Rename, SymLink
 import filecmp
@@ -34,7 +35,7 @@ def main(force=False, no_deliver=False, initial=False, all=False, cclabel=''):
     if not all:
         log.append('--first-parent')
     if not initial:
-        log.append(CI_TAG + '..')
+        log.append(common.CI_TAG + '..')
     log = git_exec(log)
     if not log:
         return
@@ -43,7 +44,7 @@ def main(force=False, no_deliver=False, initial=False, all=False, cclabel=''):
         id, comment = line.split('\x01')
         statuses = getStatuses(id, initial)
         checkout(statuses, comment.strip(), initial)
-        tag(CI_TAG, id)
+        tag(common.CI_TAG, id)
     if not no_deliver:
         cc.commit()
     if initial:
@@ -124,10 +125,10 @@ class ITransaction(object):
 class Transaction(ITransaction):
     def __init__(self, comment):
         super(Transaction, self).__init__(comment)
-        self.base = git_exec(['merge-base', CI_TAG, 'HEAD']).strip()
+        self.base = git_exec(['merge-base', common.CI_TAG, 'HEAD']).strip()
     def stage(self, file):
         super(Transaction, self).stage(file)
-        ccid = git_exec(['hash-object', join(CC_DIR, file)])[0:-1]
+        ccid = git_exec(['hash-object', join(common.CC_DIR, file)])[0:-1]
         gitid = getBlob(self.base, file)
         if ccid != gitid:
             if not IGNORE_CONFLICTS:

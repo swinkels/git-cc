@@ -8,11 +8,11 @@ class Status:
         self.file = file
     def cat(self):
         blob = git_exec(['cat-file', 'blob', getBlob(self.id, self.file)], decode=False)
-        write(join(CC_DIR, self.file), blob)
+        write(join(common.CC_DIR, self.file), blob)
     def stageDirs(self, t):
         dir = dirname(self.file)
         dirs = []
-        while not exists(join(CC_DIR, dir)):
+        while not exists(join(common.CC_DIR, dir)):
             dirs.append(dir)
             dir = dirname(dir)
         self.dirs = dirs
@@ -20,7 +20,7 @@ class Status:
     def commitDirs(self, t):
         while len(self.dirs) > 0:
             dir = self.dirs.pop();
-            if not exists(join(CC_DIR, dir)):
+            if not exists(join(common.CC_DIR, dir)):
                 cc_exec(['mkelem', '-nc', '-eltype', 'directory', dir])
                 if t.cc_label:
                     cc_exec(['mklabel', '-nc', t.cc_label, dir])
@@ -71,7 +71,7 @@ class SymLink(Status):
         self.setFile(files[0])
         id = files[1]
         self.target = git_exec(['cat-file', 'blob', getBlob(id, self.file)], decode=False)
-        if exists(join(CC_DIR, self.file)):
+        if exists(join(common.CC_DIR, self.file)):
             self.rmfirst=True
         else:
             self.rmfirst=False

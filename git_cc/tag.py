@@ -1,6 +1,7 @@
 """Tag a particular commit as gitcc start point"""
 
 from .common import *
+import common
 
 def main(commit):
-    tag(CI_TAG, commit)
+    tag(common.CI_TAG, commit)

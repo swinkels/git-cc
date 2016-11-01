@@ -38,7 +38,7 @@ def invoke(cmd, args):
             'help': cmd.ARGS[name],
             'dest': name,
         }
-        if not default:
+        if not default and name != "subdir":
             option['action'] = "store_true"
         name = name.replace('_', '-')
         parser.add_option('--' + name, **option)

@@ -9,12 +9,13 @@ import subprocess
 from fnmatch import fnmatch
 
 from .cache import Cache
-from .common import CC_DIR
+
 from .common import GIT_DIR
 from .common import cfg
 from .common import debug
 from .common import mkdirs
 from .common import validateCC
+import common
 
 ARGS = {
     'cache':   'Use the cache for faster syncing',
@@ -121,7 +122,7 @@ def main(cache=False, dry_run=False):
     if cache:
         return syncCache()
 
-    src_root = CC_DIR
+    src_root = common.CC_DIR
     src_dirs = cfg.getInclude()
     dst_root = GIT_DIR
     sync_file = SyncFile() if not dry_run else IgnoreFile()
@@ -167,7 +168,7 @@ def syncCache():
     for path in cache2.list():
         if not cache1.contains(path):
             cache1.update(path)
-            if not os.path.isdir(os.path.join(CC_DIR, path.file)):
+            if not os.path.isdir(os.path.join(common.CC_DIR, path.file)):
                 if copy(path.file):
                     copied_file_count += 1
     cache1.write()
