@@ -229,7 +229,6 @@ class Changeset(object):
         toFile = path(join(GIT_DIR, common.SUBDIR, file))
         mkdirs(toFile)
         removeFile(toFile)
-        print "****", file, toFile
         try:
             cc_exec(['get','-to', toFile, cc_file(file, version)])
         except:

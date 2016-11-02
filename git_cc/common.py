@@ -241,4 +241,3 @@ def setGlobalsForSubdir(subdir):
         CC_DIR = path(join(cfg.get(CFG_CC), SUBDIR))
         global CI_TAG
         CI_TAG = SUBDIR + "-" + CURRENT_BRANCH + '_ci'
-        print "****", SUBDIR, CC_DIR, CURRENT_BRANCH, CC_TAG, CI_TAG
