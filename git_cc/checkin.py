@@ -20,9 +20,11 @@ ARGS = {
     'initial': 'checkin everything from the beginning',
     'all': 'checkin all parents, not just the first',
     'cclabel': 'optionally specify an existing Clearcase label type to apply to each element checked in',
+    'subdir': 'Checks-in a given Git sub directory',
 }
 
-def main(force=False, no_deliver=False, initial=False, all=False, cclabel=''):
+def main(force=False, no_deliver=False, initial=False, all=False, cclabel='', subdir=None):
+    setGlobalsForSubdir(subdir)
     validateCC()
     global IGNORE_CONFLICTS
     global CC_LABEL
@@ -66,6 +68,8 @@ def getStatuses(id, initial):
     while len(split) > 1:
         char = split.pop(0)[0] # first char
         args = [split.pop(0)]
+        if not args[0].startswith(common.SUBDIR):
+            continue
         # check if file is really a symlink
         cmd = ['ls-tree', '-z', id, '--', args[0]]
         if git_exec(cmd).split(' ')[0] == '120000':
@@ -82,9 +86,15 @@ def getStatuses(id, initial):
         list.append(type)
     return list
 
+
 def checkout(stats, comment, initial):
     """Poor mans two-phase commit"""
     transaction = ITransaction(comment) if initial else Transaction(comment)
+
+    stats = filter(lambda stat: stat.file.startswith(common.SUBDIR + "/"), stats)
+    for stat in stats:
+        stat.file = stat.file[len(common.SUBDIR + "/"):]
+
     for stat in stats:
         try:
             stat.stage(transaction)
@@ -95,6 +105,7 @@ def checkout(stats, comment, initial):
     for stat in stats:
          stat.commit(transaction)
     transaction.commit(comment);
+
 
 class ITransaction(object):
     def __init__(self, comment):
@@ -129,7 +140,7 @@ class Transaction(ITransaction):
     def stage(self, file):
         super(Transaction, self).stage(file)
         ccid = git_exec(['hash-object', join(common.CC_DIR, file)])[0:-1]
-        gitid = getBlob(self.base, file)
+        gitid = getBlob(self.base, common.SUBDIR + "/" + file)
         if ccid != gitid:
             if not IGNORE_CONFLICTS:
                 raise Exception('File has been modified: %s. Try rebasing.' % file)
