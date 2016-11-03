@@ -231,12 +231,15 @@ CI_TAG = CURRENT_BRANCH + '_ci'
 users = get_users_module(cfg.getUsersModulePath())
 
 SUBDIR = ""
+LEADING_PATH = ""
 
 
 def setGlobalsForSubdir(subdir):
     if subdir is not None:
         global SUBDIR
         SUBDIR = subdir
+        global LEADING_PATH
+        LEADING_PATH = SUBDIR + "/" if len(SUBDIR) else ""
         global CC_DIR
         CC_DIR = path(join(cfg.get(CFG_CC), SUBDIR))
         global CI_TAG

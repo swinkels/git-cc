@@ -10,7 +10,7 @@ class Status:
     def setFile(self, file):
         self.file = file
     def cat(self):
-        blob = git_exec(['cat-file', 'blob', getBlob(self.id, common.SUBDIR + "/" + self.file)], decode=False)
+        blob = git_exec(['cat-file', 'blob', getBlob(self.id, common.LEADING_PATH + self.file)], decode=False)
         write(join(common.CC_DIR, self.file), blob)
     def stageDirs(self, t):
         dir = dirname(self.file)
@@ -73,7 +73,7 @@ class SymLink(Status):
     def __init__(self, files):
         self.setFile(files[0])
         id = files[1]
-        self.target = git_exec(['cat-file', 'blob', getBlob(id, common.SUBDIR + "/" + self.file)], decode=False)
+        self.target = git_exec(['cat-file', 'blob', getBlob(id, common.LEADING_PATH + self.file)], decode=False)
         if exists(join(common.CC_DIR, self.file)):
             self.rmfirst=True
         else:

@@ -91,9 +91,10 @@ def checkout(stats, comment, initial):
     """Poor mans two-phase commit"""
     transaction = ITransaction(comment) if initial else Transaction(comment)
 
-    stats = filter(lambda stat: stat.file.startswith(common.SUBDIR + "/"), stats)
-    for stat in stats:
-        stat.file = stat.file[len(common.SUBDIR + "/"):]
+    if len(common.LEADING_PATH):
+        stats = filter(lambda stat: stat.file.startswith(common.LEADING_PATH), stats)
+        for stat in stats:
+            stat.file = stat.file[len(common.LEADING_PATH):]
 
     for stat in stats:
         try:
@@ -140,7 +141,7 @@ class Transaction(ITransaction):
     def stage(self, file):
         super(Transaction, self).stage(file)
         ccid = git_exec(['hash-object', join(common.CC_DIR, file)])[0:-1]
-        gitid = getBlob(self.base, common.SUBDIR + "/" + file)
+        gitid = getBlob(self.base, common.LEADING_PATH + file)
         if ccid != gitid:
             if not IGNORE_CONFLICTS:
                 raise Exception('File has been modified: %s. Try rebasing.' % file)
