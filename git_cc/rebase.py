@@ -73,12 +73,15 @@ def doCommit(cs):
     branch = getCurrentBranch()
     if branch:
         git_exec(['checkout', CC_TAG])
+        git_exec(['merge', branch])  # git merge uses fast-forward by default
     try:
         commit(cs)
     finally:
         if branch:
-            git_exec(['rebase', common.CI_TAG, CC_TAG])
-            git_exec(['rebase', CC_TAG, branch])
+            # git_exec(['rebase', common.CI_TAG, CC_TAG])
+            # git_exec(['rebase', CC_TAG, branch])
+            git_exec(['checkout', branch])
+            git_exec(['merge', CC_TAG])  # git merge uses fast-forward by default
         else:
             git_exec(['branch', '-f', CC_TAG])
         tag(common.CI_TAG, CC_TAG)
