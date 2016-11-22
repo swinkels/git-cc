@@ -131,6 +131,9 @@ class ITransaction(object):
             cc_exec(['unco', '-rm', file])
         cc.rmactivity()
     def commit(self, comment):
+        print "Original comment encoding {}: {}".format(type(comment), comment)
+        comment = comment.encode(ENCODING, "replace")
+        print "New comment encoding {}: {}".format(type(comment), comment)
         for file in self.checkedout:
             cc_exec(['ci', '-identical', '-c', comment, file])
 
