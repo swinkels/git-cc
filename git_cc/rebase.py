@@ -32,7 +32,92 @@ ARGS = {
 cache = None
 
 
+class RebaseCommit(object):
+    """Rebases the Git repo onto a ClearCase changes.
+
+    An object of this class can commit a sequence of ClearCase changes onto
+    CI_TAG, which is the commit of the latest synchronization of the Git repo
+    and ClearCase. The new commits will precede the commits that were already
+    present after CI_TAG.
+
+    """
+
+    def do(self, cs):
+        """Rebase the Git repo onto the given sequence of ClearCase changes.
+
+        This method commits a sequence of ClearCase changes onto CI_TAG and
+        moves CI_TAG to the last of these new commits. The new commits will
+        precede the commits that were already present after CI_TAG.
+
+        """
+        branch = getCurrentBranch()
+        if branch:
+            self._preprocess(branch)
+        try:
+            self._commit(cs)
+        finally:
+            if branch:
+                self._postprocess(branch)
+            else:
+                git_exec(['branch', '-f', CC_TAG])
+            tag(common.CI_TAG, CC_TAG)
+
+    def _preprocess(self, branch):
+        git_exec(['checkout', CC_TAG])
+
+    def _postprocess(self, branch):
+        git_exec(['rebase', common.CI_TAG, CC_TAG])
+        git_exec(['rebase', CC_TAG, branch])
+
+    def _commit(self, list):
+        for cs in list:
+            cs.commit()
+
+
+class MergeCommit(RebaseCommit):
+    """Commits ClearCase changes on top of the current HEAD.
+
+    An object of this class can commit a sequence of ClearCase changes onto
+    HEAD and moves CI_TAG to the new HEAD.
+
+    As CI_TAG is the latest synchronization point of the Git repo and
+    ClearCase, this type of commit can make you skip local commits when you
+    checkin your local commits to ClearCase.
+
+    This type of commit is intended to be used when you "rebase" a
+    subdirectory. If you rebase instead of merge, all rebases to that
+    subdirectory will be consecutive in history. For example,
+
+    - rebase on subdirA
+    - rebase on subdirA
+    - rebase on subdirA
+    - rebase on subdirB
+    - rebase on subdirB
+    - rebase on subdirB
+
+    But what you want is this:
+
+    - rebase on subdirA
+    - rebase on subdirB
+    - rebase on subdirA
+    - rebase on subdirB
+    - rebase on subdirA
+    - rebase on subdirB
+
+    """
+
+    def _preprocess(self, branch):
+        git_exec(['checkout', CC_TAG])
+        git_exec(['merge', branch])  # git merge uses fast-forward by default
+
+    def _postprocess(self, branch):
+        git_exec(['checkout', branch])
+        git_exec(['merge', CC_TAG])  # git merge uses fast-forward by default
+
+
 def main(stash=False, dry_run=False, lshistory=False, load=None, subdir=None):
+
+    commitCommand = RebaseCommit() if subdir is None else MergeCommit()
 
     setGlobalsForSubdir(subdir)
 
@@ -63,28 +148,12 @@ def main(stash=False, dry_run=False, lshistory=False, load=None, subdir=None):
             return printGroups(cs)
         if not len(cs):
             return
-        doStash(lambda: doCommit(cs), stash)
+        doStash(lambda: commitCommand.do(cs), stash)
 
 def checkPristine():
     if(len(git_exec(['ls-files', '--modified']).splitlines()) > 0):
         fail('There are uncommitted files in your git directory')
 
-def doCommit(cs):
-    branch = getCurrentBranch()
-    if branch:
-        git_exec(['checkout', CC_TAG])
-        git_exec(['merge', branch])  # git merge uses fast-forward by default
-    try:
-        commit(cs)
-    finally:
-        if branch:
-            # git_exec(['rebase', common.CI_TAG, CC_TAG])
-            # git_exec(['rebase', CC_TAG, branch])
-            git_exec(['checkout', branch])
-            git_exec(['merge', CC_TAG])  # git merge uses fast-forward by default
-        else:
-            git_exec(['branch', '-f', CC_TAG])
-        tag(common.CI_TAG, CC_TAG)
 
 def getSince():
     try:
@@ -158,9 +227,6 @@ def mergeHistory(changesets):
         group.fixComment()
     return groups
 
-def commit(list):
-    for cs in list:
-        cs.commit()
 
 def printGroups(groups):
     for cs in groups:
