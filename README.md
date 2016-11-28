@@ -91,6 +91,51 @@ confspec is configured accordingly, use the command:
 
 Note that the CC label will be moved to the new version of the element, if it is already used.
 
+### Synchronization of sub directories
+
+The primary use case of gitcc is the synchronization of a single ClearCase VOB
+and a single Git repo. gitcc can also synchronize _multiple_ ClearCase VOBs and
+a single Git repo, but note that support for that feature is rudimentary. To
+give an example, assume we have a view V:/ with top-level VOBs VobA and
+VobB. Execute the following commands to import those VOBs:
+
+    $> gitcc init V:/
+    $> gitcc update --subdir=VobA
+    $> gitcc update --subdir=VobB
+
+The Git repo will have the two top-level subdirectories VobA and VobB.
+
+The rebase command also supports the --subdir option, but there are several
+things to keep in mind when you rebase a VOB to a subdirectory:
+
+1. The commits to that VOB will be consecutive in your Git history. So when you
+   rebase VobA and VobB, your Git history will end with a sequence of commits
+   to VobB, preceded by a sequence of commits to VobA. The date of each commit
+   is correct, which makes their ordering a bit peculiar.
+
+2. If you rebase a subdirectory, the rebase is actually a merge. If you would
+   do a proper rebase, all rebases to that subdirectory would be consecutive in
+   history. This would make the history look like this:
+
+    - (gitcc rebase of) VobA
+    - (...) VobA
+    - (...) VobA
+    - (...) VobB
+    - (...) VobB
+    - (...) VobB
+
+    But what you want is this:
+
+    - (gitcc rebase of) VobA
+    - (...) VobB
+    - (...) VobA
+    - (...) VobB
+    - (...) VobA
+    - (...) VobB
+
+Finally, the checkin command also supports the --subdir option so changes in
+Git can be exported to ClearCase.
+
 ## Configuration
 
 The file .git/gitcc contains configuration options for gitcc. For example, it
